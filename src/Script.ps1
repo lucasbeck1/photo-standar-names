@@ -71,6 +71,11 @@ if ($form.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
 $sourcePath = $txtSource.Text
 $destPath = $txtDest.Text
 
+if (-not (Test-Path $sourcePath) -or -not (Test-Path $destPath)) {
+    [System.Windows.Forms.MessageBox]::Show("Las rutas seleccionadas no existen.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    exit
+}
+
 try {
     Write-Host "--- Paso 1: Extrayendo archivos de subcarpetas ---" -ForegroundColor Cyan
 
@@ -80,7 +85,11 @@ try {
         ($_.DirectoryName -ne $destPath) -and $_.Name -ne $MyInvocation.MyCommand.Name 
     }
 
+    $validExtensions = @(".jpg", ".jpeg", ".png", ".heic", ".mov", ".mp4")
+
     foreach ($file in $allFiles) {
+        if ($file.Extension.ToLower() -notin $validExtensions) { continue }
+
         $targetPath = Join-Path $destPath $file.Name
         
         # Si el archivo ya existe en la raíz con el mismo nombre, le añade un sufijo para no sobrescribir
@@ -91,8 +100,13 @@ try {
             $count++
         }
         
-        Move-Item -Path $file.FullName -Destination $finalTarget
-        Write-Host "Movido: $($file.Name) desde $($file.Directory.Name)" -ForegroundColor Gray
+        try {
+            Move-Item -Path $file.FullName -Destination $finalTarget -ErrorAction Stop
+            Write-Host "Movido: $($file.Name) desde $($file.Directory.Name)" -ForegroundColor Gray
+        }
+        catch {
+            Write-Host "Error moviendo $($file.Name): $($_.Exception.Message)" -ForegroundColor Red
+        }
     }
 
     Write-Host "`n--- Paso 2: Renombrando archivos por fecha ---" -ForegroundColor Cyan
@@ -103,7 +117,10 @@ try {
     }
 
     foreach ($file in $filesToRename) {
+        # Usar la fecha mas antigua entre Creacion y Modificacion para aproximar mejor la fecha original
         $date = $file.LastWriteTime
+        if ($file.CreationTime -lt $date) { $date = $file.CreationTime }
+
         $newName = $date.ToString("yyyyMMdd_HHmmss")
         $extension = $file.Extension.ToLower()
         $finalName = $newName + $extension
@@ -114,7 +131,14 @@ try {
             $count++
         }
         
-        Rename-Item -Path $file.FullName -NewName $finalName
+        if ($file.Name -ne $finalName) {
+            try {
+                Rename-Item -Path $file.FullName -NewName $finalName -ErrorAction Stop
+            }
+            catch {
+                Write-Host "Error renombrando $($file.Name): $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
     }
 
     # 3. Limpieza opcional: Borrar carpetas vacias
