@@ -11,7 +11,7 @@ $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
 
 # Función auxiliar para crear controles
-function Create-Label ($text, $y) {
+function CreateLabel ($text, $y) {
     $lbl = New-Object System.Windows.Forms.Label
     $lbl.Location = New-Object System.Drawing.Point(20, $y)
     $lbl.Size = New-Object System.Drawing.Size(440, 20)
@@ -19,7 +19,7 @@ function Create-Label ($text, $y) {
     $form.Controls.Add($lbl)
 }
 
-function Create-BrowseSection ($y, $defaultPath) {
+function CreateBrowseSection ($y, $defaultPath) {
     $txt = New-Object System.Windows.Forms.TextBox
     $txt.Location = New-Object System.Drawing.Point(20, ($y + 25))
     $txt.Size = New-Object System.Drawing.Size(350, 20)
@@ -39,11 +39,12 @@ function Create-BrowseSection ($y, $defaultPath) {
     return $txt
 }
 
-Create-Label "Carpeta de Origen:" 20
-$txtSource = Create-BrowseSection 20 $PSScriptRoot
+# Controles del formulario
+CreateLabel "Carpeta de Origen:" 20
+$txtSource = CreateBrowseSection 20 $PSScriptRoot
 
-Create-Label "Carpeta de Destino:" 80
-$txtDest = Create-BrowseSection 80 $PSScriptRoot
+CreateLabel "Carpeta de Destino:" 80
+$txtDest = CreateBrowseSection 80 $PSScriptRoot
 
 # Botones Aceptar / Cancelar
 $btnAccept = New-Object System.Windows.Forms.Button
